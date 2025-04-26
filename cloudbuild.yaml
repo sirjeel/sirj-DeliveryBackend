@@ -1,0 +1,19 @@
+steps:
+  - name: 'gcr.io/k8s-skaffold/pack'
+    entrypoint: pack
+    args:
+      - build
+      - 'europe-west2-docker.pkg.dev/gothic-standard-456009-g8/cloud-run-source-deploy/sirjdelivery-backend/sirjdelivery-backend'
+      - '--builder=gcr.io/buildpacks/builder:latest'
+    env:
+      - 'GOOGLE_CLOUD_PROJECT=gothic-standard-456009-g8'
+
+images:
+  - 'europe-west2-docker.pkg.dev/gothic-standard-456009-g8/cloud-run-source-deploy/sirjdelivery-backend/sirjdelivery-backend'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+serviceAccount: 'projects/gothic-standard-456009-g8/serviceAccounts/305074585575@cloudbuild.gserviceaccount.com'
+
+timeout: 1200s
