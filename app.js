@@ -9,6 +9,7 @@ require('dotenv').config();
 const optimize = require('./routes/optimize');
 const maps = require('./routes/maps');
 const deliveryRoutes = require('./routes/route');
+const oilproduct = require('./routes/oilproduct');
 
 // app
 const app = express();
@@ -41,6 +42,7 @@ app.options('*', cors(corsOptions));
 app.use(optimize);
 app.use(maps);
 app.use(deliveryRoutes);
+app.use(oilproduct);
 
 const port = process.env.PORT || 8080;
 

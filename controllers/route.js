@@ -30,10 +30,22 @@ exports.updateStop = async (req, res) => {
       return res.status(400).json({ error: "Invalid route ID." });
     }
 */
-    const result = await Route.findByIdAndUpdate(
+   let update;
+
+    if (Array.isArray(stop)) {
+      // Handle array of stop objects
+      update = { $push: { stops: { $each: stop } } };
+    } else if (typeof stop === 'object') {
+      // Handle single stop object
+      update = { $push: { stops: stop } };
+    } else {
+      return res.status(400).json({ error: "Invalid stop data format." });
+    }
+
+   const result = await Route.findByIdAndUpdate(
       routeId,
-      { $push: { stops: stop } },
-      { new: false } // no need to return the updated document
+      update,
+      { new: false } // no need to return updated document
     );
 
     if (!result) {
