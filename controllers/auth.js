@@ -39,7 +39,7 @@ exports.signin = async (req, res) => {
         // Set cookie options
         const cookieOptions = {
             httpOnly: true,
-            secure: false,    // process.env.NODE_ENV === 'production', // true on HTTPS
+            secure: process.env.NODE_ENV === 'production',    // process.env.NODE_ENV === 'production', // set "false" for local development enviroment
             sameSite: 'Strict',
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         };

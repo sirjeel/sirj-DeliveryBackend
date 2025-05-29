@@ -24,7 +24,7 @@ mongoose.connect(process.env.MONGO_URI).then(() => console.log('DB Connected'));
 // CORS configuration for production and development
 const allowedOrigins = [
   'http://localhost:3000', // Development
-  'https://ecommerceweb-459909.nw.r.appspot.com', // Production
+  'https://ecommerceweb-459909.nw.r.appspot.com', // Production  
   // Add any other domains you need to allow
 ];
 
