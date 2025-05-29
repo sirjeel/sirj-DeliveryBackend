@@ -21,30 +21,14 @@ const app = express();
 // db
 mongoose.connect(process.env.MONGO_URI).then(() => console.log('DB Connected'));
 
-// CORS configuration for production and development
-const allowedOrigins = [
-  'http://localhost:3000', // Development
-  'https://ecommerceweb-459909.nw.r.appspot.com', // Production  
-  // Add any other domains you need to allow
-];
 
-const corsOptionsDelegate = function (req, callback) {
-  const origin = req.header('Origin');
-  let corsOptions;
-  
-  if (allowedOrigins.includes(origin)) {
-    corsOptions = {
-      origin: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-      credentials: true // Enable cookies if needed
-    };
-  } else {
-    corsOptions = { origin: false }; // Disable CORS for other origins
-  }
-  
-  callback(null, corsOptions);
-};
+
+const corsOptions = {
+    origin: '*', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+  };
 
 // middlewares
 app.use(bodyParser.json());
@@ -53,8 +37,8 @@ app.use(morgan('dev'));
 app.use(expressValidator());
 
 // Apply CORS middleware
-app.use(cors(corsOptionsDelegate));
-app.options('*', cors(corsOptionsDelegate));
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // routes middleware
 app.use(optimize);
