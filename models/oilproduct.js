@@ -9,6 +9,12 @@ const oilproductSchema = new mongoose.Schema(
             required: true,
             maxlength: 32
         },
+         sku: {
+            type: String,
+            trim: true,
+            required: true,
+            maxlength: 52
+        },
         description: {
             type: String,
             required: true,
@@ -20,17 +26,30 @@ const oilproductSchema = new mongoose.Schema(
             required: true,
             maxlength: 32
         },
-        quantity: {
-            type: Number
+        category: {
+            type: String,
+            trim: true,
+            required: true,
+            maxlength: 32
         },
         sold: {
             type: Number,
             default: 0
         },
-        photo: {
-            type: String,
-            required: true
-        }
+        active: {
+            type: Boolean,
+            default: true
+        },
+        photos: {
+            type: [String], // Array of image URLs or base64 strings
+            validate: {
+                validator: function (arr) {
+                    return arr.length <= 4;
+                },
+                message: props => `A maximum of 4 photos are allowed, but received ${props.value.length}`
+            },
+            default: [] // Allows admin to save 0–4 images
+        }        
     },
     { timestamps: true }
 );
