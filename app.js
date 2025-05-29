@@ -42,7 +42,7 @@ app.use(expressValidator());
 //below option are set for google cloud run server running in to cors errors
 
 // below has done to remove cookier in front end while signout but google error and this has to be understood well
-const allowedOrigins = [  'http://localhost:3000'];
+const allowedOrigins = [  'https://ecommerceweb-459909.nw.r.appspot.com'];
 const corsOptionsDelegate = function (req, callback) {
   const origin = req.header('Origin');
   if (allowedOrigins.includes(origin)) {
