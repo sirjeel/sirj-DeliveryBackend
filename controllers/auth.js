@@ -17,7 +17,32 @@ exports.signup = async (req, res) => {
     }
 };
 
+exports.signin = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ error: 'User with that email does not exist. Please signup' });
+        }
+        if (!user.authenticate(password)) {
+            return res.status(401).json({ error: 'Email and password dont match' });
+        }
+        const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
+        res.cookie('t', token, { expire: new Date() + 9999 });
+        const { _id, name, role, region, pharmacies } = user;
+         return res.status(200).json({
+            success: true,
+            message: 'Login successful',
+            user: { token, user: { _id, email, name, role, region, pharmacies } },
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
 
+/* 
+// below signin processs for more secure way to save token in http cookie on client side
 
 exports.signin = async (req, res) => {
     try {
@@ -58,7 +83,10 @@ exports.signin = async (req, res) => {
     }
 };
 
+*/
 
+/*
+// below signin processs for more secure way to save token in http cookie on client side
 exports.signout = (req, res) => {
     res.clearCookie('token', {
         httpOnly: true,
@@ -69,7 +97,7 @@ exports.signout = (req, res) => {
 
     return res.status(200).json({ success: true, message: 'Signout success' });
 };
-
+*/
 
 exports.requireSignin = expressJwt({
     secret: process.env.JWT_SECRET,
@@ -94,4 +122,9 @@ exports.isAdmin = (req, res, next) => {
         });
     }
     next();
+};
+
+exports.signout = (req, res) => {
+    res.clearCookie('t');
+    res.json({ message: 'Signout success' });
 };
