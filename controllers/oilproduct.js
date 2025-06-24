@@ -138,8 +138,121 @@ exports.updateActive = async (req, res) => {
 };
 
 
+exports.update = async (req, res) => {
+  const productId = req.query.productId;
+  if (!productId) {
+    return res.status(400).json({ error: 'Product ID is required' });
+  }
 
-// Controller: Update product
+  let product;
+  try {
+    product = await Oilproduct.findById(productId);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: 'Error fetching product from DB' });
+  }
+
+  // Step 1: Parse form data
+  let fields, files;
+  try {
+    ({ fields, files } = await parseForm(req));
+  } catch (err) {
+    return res.status(400).json({ error: 'Error parsing form data' });
+  }
+
+  const { name, description, price, sku, category } = fields;
+  if (!name || !description || !price || !sku || !category) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  // Step 2: Update product fields
+  product.name = Array.isArray(name) ? name[0] : name;
+  product.description = Array.isArray(description) ? description[0] : description;
+  product.price = Array.isArray(price) ? parseFloat(price[0]) : parseFloat(price);
+  product.sku = Array.isArray(sku) ? sku[0] : sku;
+  product.category = Array.isArray(category) ? category[0] : category;
+
+  // Step 3: Check for new image uploads
+  const photoFilesRaw = files?.photos;
+  const photoFiles = Array.isArray(photoFilesRaw) ? photoFilesRaw : (photoFilesRaw ? [photoFilesRaw] : []);
+
+  // Only proceed to delete and upload if new image files are present
+  if (photoFiles.length > 0 && photoFiles.some(file => file && file.filepath)) {
+    // Step 4: Delete old images from GCS
+    try {
+      const photos = Array.isArray(product.photos) ? product.photos : [];
+      if (photos.length > 0) {
+        const deletedImages = await deleteGCSFiles(photos);
+        const allDeleted = deletedImages.every(item => item.status === 'success');
+        if (!allDeleted) {
+          return res.status(400).json({ error: 'Failed to delete all images from GCS' });
+        }
+
+        if (allDeleted) {
+          product.photos = [];
+        } else {
+          // partially clean mongodb image files that were successfully deleted
+          deletedImages.forEach((item) => {
+            if (item.status === "success") {
+              const combineUrl = `https://storage.googleapis.com/${myBucket}/${item.filePath}`;
+              const index = product.photos.findIndex(url => url === combineUrl);
+              if (index !== -1) product.photos.splice(index, 1);
+            }
+          });
+        }
+      }
+    } catch (err) {
+      return res.status(500).json({ error: 'Error deleting old images from GCS' });
+    }
+
+    // Step 5: Upload new photos
+    const uploadPromises = photoFiles.map((photoFile) => {
+      return new Promise((resolve, reject) => {
+        if (!photoFile || !photoFile.filepath) {
+          return reject(new Error('Invalid photo file'));
+        }
+
+        if (photoFile.size > 1_000_000) {
+          return reject(new Error('Each image must be under 1MB'));
+        }
+
+        const destinationFileName = `products/${Date.now()}_${photoFile.originalFilename}`;
+        const blob = myBucket.file(destinationFileName);
+        const blobStream = blob.createWriteStream({ contentType: photoFile.mimetype });
+
+        blobStream.on('error', (uploadErr) => reject(uploadErr));
+
+        blobStream.on('finish', () => {
+          const publicUrl = `https://storage.googleapis.com/${myBucket.name}/${destinationFileName}`;
+          product.photos.push(publicUrl);
+          resolve();
+        });
+
+        fs.createReadStream(photoFile.filepath).pipe(blobStream);
+      });
+    });
+
+    try {
+      await Promise.all(uploadPromises);
+    } catch (uploadErr) {
+      return res.status(500).json({ error: uploadErr.message || 'Image upload failed' });
+    }
+  }
+
+  // Step 6: Save updated product
+  try {
+    await product.save();
+    return res.status(200).json({ success: true, message: 'Product updated successfully.' });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to save updated product' });
+  }
+};
+
+
+// Controller: Update product below func delete old images even if the attached image is empty
+/*
 exports.update = async (req, res) => {
   const productId = req.query.productId;
   if (!productId) {
@@ -234,7 +347,10 @@ exports.update = async (req, res) => {
     });
   });
   try {
-    await Promise.all(uploadPromises);
+    if if (photoFiles.length > 0) {
+      await Promise.all(uploadPromises);
+    }
+    
     await product.save();
     return res.status(200).json({ success: true, message: 'Product updated successfully.' });
   } catch (error) {
@@ -242,7 +358,7 @@ exports.update = async (req, res) => {
     return res.status(500).json({ error: error.message || 'Error during upload or DB save' });
   }
 };
-
+*/
 
 exports.remove = async (req, res) => {
     const productId = req.query.productId;
