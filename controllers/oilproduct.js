@@ -4,9 +4,9 @@ const { Storage } = require('@google-cloud/storage');
 const Oilproduct = require('../models/oilproduct');
 // ecommerceweb-459909 /bucket name >> sirjbucketb 
 //.... this is mine ...id>> "sirjdelivery" storage.bucket('sirjbucket');
-const projectId = "sirjdelivery";
+const projectId = "ecommerceweb-459909";
 const storage = new Storage({ projectId });
-const myBucket = storage.bucket('sirjbucket');
+const myBucket = storage.bucket('sirjbucketb');
 const { parseForm } = require('../helpers/utility');
 
 exports.create = async (req, res) => {

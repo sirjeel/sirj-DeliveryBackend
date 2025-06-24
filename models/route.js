@@ -17,6 +17,45 @@ const stopSchema = new mongoose.Schema({
     finishTime: { type: String, required: true } 
   });
 
+  const GeolocationSchema = new mongoose.Schema({
+  coords: {
+    latitude: {
+      type: Number,
+      required: true,
+    },
+    longitude: {
+      type: Number,
+      required: true,
+    },
+    altitude: {
+      type: Number,
+      default: null,
+    },
+    accuracy: {
+      type: Number,
+      required: true,
+    },
+    altitudeAccuracy: {
+      type: Number,
+      default: null,
+    },
+    heading: {
+      type: Number,
+      default: null,
+    },
+    speed: {
+      type: Number,
+      default: null,
+    },
+  },
+  timestamp: {
+    type: Number, // Unix timestamp in milliseconds (Date.now() format)
+    required: true,
+  },
+}, {
+  timestamps: true, // adds createdAt and updatedAt fields
+});
+
   
   //below indexing is done to support plan of search of address in search filter reports
   stopSchema.index({ description: "text" }); // optional
@@ -26,7 +65,11 @@ const stopSchema = new mongoose.Schema({
       start: { type: [stopSchema], default: []},
       end: { type: [stopSchema], default: []},
       stops: { type: [stopSchema], required: true },
-      metrics: { type: [metricsSchema], default: [] }
+      metrics: { type: [metricsSchema], default: [] },
+      location: {
+        type: GeolocationSchema,
+        default: null
+      },
     },
     { timestamps: true }
   );

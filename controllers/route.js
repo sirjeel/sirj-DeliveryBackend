@@ -91,6 +91,32 @@ exports.updateStatus = async (req, res) => {
   }
 };
 
+exports.updateGeolocation = async (req, res) => {
+  try {
+    const { routeId, geolocation } = req.body;
+
+    if (!routeId || !geolocation) {
+      return res.status(400).json({ error: "routeId and geolocation are required." });
+    }
+
+    // Update the stop with matching stopId inside the stops array of the route
+    const result = await Route.updateOne(
+      { _id: routeId },
+      { $set: { "location": geolocation  } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Route not found." });
+    }
+
+    // ✅ Return only a success confirmation
+    return res.status(200).json({ success: true, message: "Geolocation updated successfully." });
+
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ error: errorHandler(err) || "Internal Server Error" });
+  }
+};
 
 exports.deleteStop = async (req, res) => {
   try {
@@ -194,6 +220,27 @@ exports.fetchRoutesByDateRange = async (req, res) => {
     return res.status(200).json({ routes });
   } catch (error) {
     console.error("Error fetching routes by date range:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+exports.fetchRouteById = async (req, res) => {
+  try {
+    const { routeId } = req.params; // Better than req.body for read ops
+
+    if (!routeId) {
+      return res.status(400).json({ message: "routeId is required." });
+    }
+
+    const route = await Route.findById( routeId );
+
+    if (!route) {
+      return res.status(404).json({ message: "Route not found." });
+    }
+
+    return res.status(200).json({ route });
+  } catch (error) {
+    console.error("Error fetching route by ID:", error);
     return res.status(500).json({ message: "Internal server error." });
   }
 };

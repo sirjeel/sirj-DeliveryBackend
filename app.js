@@ -28,7 +28,7 @@ mongoose.connect(process.env.MONGO_URI).then(() => console.log('DB Connected'));
 
 const corsOptions = {
     origin: '*', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
   };
