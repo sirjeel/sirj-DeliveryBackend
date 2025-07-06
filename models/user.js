@@ -14,8 +14,6 @@ const userSchema = new mongoose.Schema(
         email: {
             type: String,
             trim: true,
-            required: true,
-            unique: true
         },
         hashed_password: {
             type: String,
@@ -35,11 +33,11 @@ const userSchema = new mongoose.Schema(
         ],
             default: []
         },
-        pharmacies: {
+        collectionpoint: {
             type: [
           {
             type: ObjectId,
-            ref: "Pharmacies",
+            ref: "Collectionpoint",
           }
         ],
             default: []

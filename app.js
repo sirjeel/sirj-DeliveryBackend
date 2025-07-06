@@ -14,7 +14,7 @@ const oilproduct = require('./routes/oilproduct');
 const oilcategoryRoutes = require('./routes/oilcategory');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
-const pharmacies = require('./routes/pharmacies');
+const collectionpoint = require('./routes/collectionpoint');
 const region = require('./routes/region');
 const roles = require('./routes/roles');
 
@@ -51,7 +51,7 @@ app.use(oilproduct);
 app.use(oilcategoryRoutes);
 app.use(authRoutes);
 app.use(userRoutes);
-app.use(pharmacies);
+app.use(collectionpoint);
 app.use(region);
 app.use(roles);
 

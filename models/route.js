@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { ObjectId } = mongoose.Schema;
 
 const stopSchema = new mongoose.Schema({
   lat: { type: Number, required: true },
@@ -9,6 +10,7 @@ const stopSchema = new mongoose.Schema({
   place_id: { type: String, required: true },
   name: { type: String, required: true },
   status: { type: String, required: true },
+  collectionpoint: { type: String, required: true },
   });
 
   const metricsSchema = new mongoose.Schema({
@@ -70,6 +72,11 @@ const stopSchema = new mongoose.Schema({
         type: GeolocationSchema,
         default: null
       },
+      user: {
+            type: ObjectId,
+            ref: "User",
+            required: true
+        },
     },
     { timestamps: true }
   );

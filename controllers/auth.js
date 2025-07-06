@@ -20,26 +20,99 @@ exports.signup = async (req, res) => {
 exports.signin = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const user = await User.findOne({ email });
+
+        // Find user and populate references
+        const user = await User.findOne({ email })
+            .populate('role')
+            .populate('region')
+            .populate('collectionpoint');
+
         if (!user) {
-            return res.status(400).json({ error: 'User with that email does not exist. Please signup' });
+            return res.status(400).json({
+                error: 'User with that email does not exist. Please signup'
+            });
         }
+
         if (!user.authenticate(password)) {
-            return res.status(401).json({ error: 'Email and password dont match' });
+            return res.status(401).json({
+                error: 'Email and password dont match'
+            });
         }
+
         const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
         res.cookie('t', token, { expire: new Date() + 9999 });
-        const { _id, name, role, region, pharmacies } = user;
-         return res.status(200).json({
+
+        const { _id, name, role, region, collectionpoint } = user;
+
+        return res.status(200).json({
             success: true,
             message: 'Login successful',
-            user: { token, user: { _id, email, name, role, region, pharmacies } },
+            user: {
+                token,
+                user: {
+                    _id,
+                    email,
+                    name,
+                    role,           // Now populated with full role documents
+                    region,         // Now populated with full region documents
+                    collectionpoint // Now populated with full collectionpoint documents
+                }
+            }
         });
+
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
     }
 };
+
+exports.signinB = async (req, res) => {
+    try {
+        const { name, password } = req.body;
+
+        // Find user and populate references
+        const user = await User.findOne({ name })
+            .populate('role')
+            .populate('region')
+            .populate('collectionpoint');
+
+        if (!user) {
+            return res.status(400).json({
+                error: 'User with that name does not exist. Please signup'
+            });
+        }
+
+        if (!user.authenticate(password)) {
+            return res.status(401).json({
+                error: 'Name and password dont match'
+            });
+        }
+
+        const token = jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
+        res.cookie('t', token, { expire: new Date() + 9999 });
+
+        return res.status(200).json({
+                success: true,
+                message: 'Login successful',
+                user: {
+                    token,
+                    user: {
+                        _id: user._id,
+                        email: user.email,
+                        name: user.name,
+                        role: user.role,
+                        region: user.region,
+                        collectionpoint: user.collectionpoint
+                    }
+                        }
+                    });
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+};
+
 
 /* 
 // below signin processs for more secure way to save token in http cookie on client side

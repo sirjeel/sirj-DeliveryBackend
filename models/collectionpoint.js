@@ -12,7 +12,7 @@ const placeSchema = new mongoose.Schema({
   });
 
 
-const pharmaciesSchema = new mongoose.Schema(
+const collectionpointSchema = new mongoose.Schema(
     {
         name: {
             type: String,
@@ -37,7 +37,7 @@ const pharmaciesSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-module.exports = mongoose.model("Pharmacies", pharmaciesSchema);
+module.exports = mongoose.model("Collectionpoint", collectionpointSchema);
 
 
 /*
