@@ -1,5 +1,6 @@
 const Route = require('../models/route');
 const { errorHandler } = require('../helpers/dbErrorHandler');
+const mongoose = require("mongoose");
 
 
 
@@ -66,7 +67,7 @@ exports.updateStop = async (req, res) => {
 
 exports.updateStatus = async (req, res) => {
   try {
-    const { routeId, status, stopId, time } = req.body;
+    const { routeId, status, stopId, time, driverId } = req.body;
 
     if (!routeId || !stopId) {
       return res.status(400).json({ error: "routeId and stopId are required." });
@@ -75,7 +76,7 @@ exports.updateStatus = async (req, res) => {
     // Update the stop with matching stopId inside the stops array of the route
     const result = await Route.updateOne(
       { _id: routeId, "stops.stopId": stopId },
-      { $set: { "stops.$.status": status, "stops.$.time": time  } }
+      { $set: { "stops.$.status": status, "stops.$.time": time, "stops.$.driver": driverId } }
     );
 
     if (result.matchedCount === 0) {
@@ -191,9 +192,9 @@ exports.deleteOneroute = async (req, res) => {
 };
 
 
-exports.fetchRoutesByDateRange = async (req, res) => {
+exports.fetchAllRoutesByDateRange = async (req, res) => {
   try {
-    const { startDate, endDate } = req.body;
+    const { startDate, endDate, collectionpoints } = req.body;
 
     if (!startDate || !endDate) {
       return res.status(400).json({ message: "startDate and endDate are required." });
@@ -209,15 +210,32 @@ exports.fetchRoutesByDateRange = async (req, res) => {
 
     // Adjust end date to include the full day
     end.setHours(23, 59, 59, 999);
+    
+    const collectionpointFilter = collectionpoints.map(cp => new mongoose.Types.ObjectId(cp._id));
+
 
     const routes = await Route.find({
       createdAt: {
         $gte: start,
         $lte: end
       }
-    }).exec();
+    })
+    .populate('stops.driver')
+    .populate('stops.collectionpoint')   
 
-    return res.status(200).json({ routes });
+    // Post-filter: retain routes that include **all** collectionpointFilter IDs in their stops
+   const filteredRoutes = routes.filter(route => {
+   const routeCollectionpointIds = route.stops.map(stop =>
+    stop.collectionpoint?._id?.toString()
+    );
+
+     return collectionpointFilter.every(id =>
+      routeCollectionpointIds.includes(id.toString())
+      );
+    });
+
+
+    return res.status(200).json({ filteredRoutes });
   } catch (error) {
     console.error("Error fetching routes by date range:", error);
     return res.status(500).json({ message: "Internal server error." });

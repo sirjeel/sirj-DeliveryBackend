@@ -10,7 +10,8 @@ const stopSchema = new mongoose.Schema({
   place_id: { type: String, required: true },
   name: { type: String, required: true },
   status: { type: String, required: true },
-  collectionpoint: { type: String, required: true },
+  collectionpoint: {  type: ObjectId, ref: "Collectionpoint", required: true },
+  driver: {  type: ObjectId, ref: "User", default: null }, 
   });
 
   const metricsSchema = new mongoose.Schema({
