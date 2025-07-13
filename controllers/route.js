@@ -191,7 +191,7 @@ exports.deleteOneroute = async (req, res) => {
   }
 };
 
-
+/* below func without cutoff dates data schema change of collection point
 exports.fetchAllRoutesByDateRange = async (req, res) => {
   try {
     const { startDate, endDate, collectionpoints } = req.body;
@@ -223,13 +223,13 @@ exports.fetchAllRoutesByDateRange = async (req, res) => {
     .populate('stops.driver')
     .populate('stops.collectionpoint')   
 
-    // Post-filter: retain routes that include **all** collectionpointFilter IDs in their stops
+    // Post-filter: retain routes that include **some** collectionpointFilter IDs in their stops
    const filteredRoutes = routes.filter(route => {
    const routeCollectionpointIds = route.stops.map(stop =>
     stop.collectionpoint?._id?.toString()
     );
 
-     return collectionpointFilter.every(id =>
+     return collectionpointFilter.some(id =>
       routeCollectionpointIds.includes(id.toString())
       );
     });
@@ -241,6 +241,66 @@ exports.fetchAllRoutesByDateRange = async (req, res) => {
     return res.status(500).json({ message: "Internal server error." });
   }
 };
+*/
+
+
+exports.fetchAllRoutesByDateRange = async (req, res) => {
+  try {
+    const { startDate, endDate, collectionpoints = [], userID } = req.body;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: "startDate and endDate are required." });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    // below cuttoff date when stop schema change as a result reports not displaying data before that date
+    const cutoffDate = new Date("2025-07-07");
+
+    if (isNaN(start) || isNaN(end)) {
+      return res.status(400).json({ message: "Invalid date format. Expected 'YYYY-MM-DD'." });
+    }
+
+    // Include entire end date
+    end.setHours(23, 59, 59, 999);
+
+    // Normalize to ObjectId if needed
+    const collectionpointFilter = collectionpoints.map(cp => new mongoose.Types.ObjectId(cp._id) );
+
+    const routes = await Route.find({
+      createdAt: { $gte: start, $lte: end }
+    })
+      .populate('stops.driver')
+      .populate('stops.collectionpoint')
+      .exec(); // use exec on the query chain directly
+
+    let filteredRoutes;
+
+    const isSpecialUser = userID === "684c7ead90b1d07630efc988" || userID === "684c7f3990b1d07630efc98a";
+    const isDateold = start < cutoffDate || end < cutoffDate;
+
+    if (isSpecialUser && isDateold) {
+      filteredRoutes = routes;
+    } else {
+      filteredRoutes = routes.filter(route => {
+        const routeCollectionpointIds = route.stops
+          .map(stop => stop.collectionpoint?._id?.toString())
+          .filter(Boolean); // filter out undefined/null
+
+        return collectionpointFilter.some(id =>
+          routeCollectionpointIds.includes(id.toString())
+        );
+      });
+    }
+
+    return res.status(200).json({ filteredRoutes });
+
+  } catch (error) {
+    console.error("Error fetching routes by date range:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
 
 exports.fetchRouteById = async (req, res) => {
   try {
@@ -262,3 +322,5 @@ exports.fetchRouteById = async (req, res) => {
     return res.status(500).json({ message: "Internal server error." });
   }
 };
+
+

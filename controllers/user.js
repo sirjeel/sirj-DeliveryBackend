@@ -158,3 +158,33 @@ exports.updateTimesheet = async (req, res) => {
     return res.status(500).json({ error: errorHandler(err) || "Internal Server Error" });
   }
 };
+
+// add collectionpoint to owner array
+exports.addCollectiontoOwner = async (req, res) => {
+  try {
+    const { userId, newcollectionpoint } = req.body;
+
+    if (!userId|| !newcollectionpoint) {
+      return res.status(400).json({ error: "userID and stop are required." });
+    }
+
+   let update = { $push: { collectionpoint: newcollectionpoint } };
+
+   const result = await User.findByIdAndUpdate(
+      userId,
+      update,
+      { new: false } // no need to return updated document
+    );
+
+    if (!result) {
+      return res.status(404).json({ error: "userID not found." });
+    }
+
+    // ✅ Return only a success confirmation
+    return res.status(200).json({ success: true, message: "UserID updated successfully." });
+
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ error: errorHandler(err) || "Internal Server Error" });
+  }
+};
