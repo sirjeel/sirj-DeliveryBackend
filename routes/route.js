@@ -1,10 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const {create, updateStop, updateStatus, updateGeolocation, deleteStop, deleteMany, 
-deleteOneroute, fetchAllRoutesByDateRange, fetchRouteById } = require("../controllers/route");
+deleteOneroute, fetchAllRoutesByDateRange, fetchRouteById, updateStopsWithCollectionpoint  } = require("../controllers/route");
 //below changes made now it shoudl update
 
 router.post("/route/fetchroutebetweenDates", fetchAllRoutesByDateRange);
+router.post("/route/datamigration1", updateStopsWithCollectionpoint);
 router.get('/route/:routeId', fetchRouteById);
 router.post("/route/create", create);
 router.put('/route/addstop', updateStop);

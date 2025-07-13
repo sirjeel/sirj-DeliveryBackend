@@ -191,7 +191,7 @@ exports.deleteOneroute = async (req, res) => {
   }
 };
 
-/* below func without cutoff dates data schema change of collection point
+
 exports.fetchAllRoutesByDateRange = async (req, res) => {
   try {
     const { startDate, endDate, collectionpoints } = req.body;
@@ -221,7 +221,8 @@ exports.fetchAllRoutesByDateRange = async (req, res) => {
       }
     })
     .populate('stops.driver')
-    .populate('stops.collectionpoint')   
+    .populate('stops.collectionpoint') 
+    .exec(); // use exec on the query chain directly  
 
     // Post-filter: retain routes that include **some** collectionpointFilter IDs in their stops
    const filteredRoutes = routes.filter(route => {
@@ -241,9 +242,9 @@ exports.fetchAllRoutesByDateRange = async (req, res) => {
     return res.status(500).json({ message: "Internal server error." });
   }
 };
-*/
 
 
+/*
 exports.fetchAllRoutesByDateRange = async (req, res) => {
   try {
     const { startDate, endDate, collectionpoints = [], userID } = req.body;
@@ -300,7 +301,7 @@ exports.fetchAllRoutesByDateRange = async (req, res) => {
     return res.status(500).json({ message: "Internal server error." });
   }
 };
-
+*/
 
 exports.fetchRouteById = async (req, res) => {
   try {
@@ -323,4 +324,53 @@ exports.fetchRouteById = async (req, res) => {
   }
 };
 
+ // below bulk data migration to include collectionpoint field
+exports.updateStopsWithCollectionpoint = async (req, res) => {
+  const defaultCollectionPointId = new mongoose.Types.ObjectId("685ec8fdcc558f99d54f458c");
 
+  try {
+    const { startDate, endDate } = req.body;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: "startDate and endDate are required." });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999); // Include entire end day
+
+    // Query routes in the given date range
+    const routes = await Route.find({
+      createdAt: { $gte: start, $lte: end }
+    });
+
+    if (routes.length === 0) {
+      return res.status(200).json({ message: "No routes found in the given range." });
+    }
+
+    let updatedCount = 0;
+
+    for (const route of routes) {
+      let isModified = false;
+
+      route.stops.forEach((stop) => {
+        if (!stop.collectionpoint) {
+          stop.collectionpoint = defaultCollectionPointId;
+          isModified = true;
+        }
+      });
+
+      if (isModified) {
+        await route.save();
+        updatedCount++;
+      }
+    }
+
+    return res.status(200).json({
+      message: `Updated ${updatedCount} route(s) with collectionpoint in stops.`,
+    });
+  } catch (err) {
+    console.error("Error updating stops:", err);
+    return res.status(500).json({ error: "Failed to update stops" });
+  }
+};

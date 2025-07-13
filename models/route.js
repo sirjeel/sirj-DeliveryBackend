@@ -15,9 +15,9 @@ const stopSchema = new mongoose.Schema({
   });
 
   const metricsSchema = new mongoose.Schema({
-    distanceKm: { type: String, required: true },
-    durationHours: { type: String, required: true },
-    finishTime: { type: String, required: true } 
+    distanceKm: { type: String, default: null },
+    durationHours: { type: String, default: null },
+    finishTime: { type: String, default: null } 
   });
 
   const GeolocationSchema = new mongoose.Schema({
