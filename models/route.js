@@ -12,12 +12,15 @@ const stopSchema = new mongoose.Schema({
   status: { type: String, required: true },
   collectionpoint: {  type: ObjectId, ref: "Collectionpoint", required: true },
   driver: {  type: ObjectId, ref: "User", default: null }, 
+  eta: { type: Date, default: null },
   });
+
+
 
   const metricsSchema = new mongoose.Schema({
     distanceKm: { type: String, default: null },
     durationHours: { type: String, default: null },
-    finishTime: { type: String, default: null } 
+    finishTime: { type: String, default: null }  
   });
 
   const GeolocationSchema = new mongoose.Schema({

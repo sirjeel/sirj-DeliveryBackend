@@ -374,3 +374,28 @@ exports.updateStopsWithCollectionpoint = async (req, res) => {
     return res.status(500).json({ error: "Failed to update stops" });
   }
 };
+
+exports.bulkupdateEta = async (req, res) => {
+  try {
+    const { routeId, stops } = req.body;
+
+    if (!routeId || !Array.isArray(stops)) {
+      return res.status(400).json({ error: "routeId and a valid stops array are required." });
+    }
+
+    const result = await Route.updateOne(
+      { _id: routeId },
+      { $set: { stops } }
+    );
+
+    if (!result.modifiedCount) {
+      return res.status(404).json({ error: "Route not found or stops not updated." });
+    }
+
+    return res.status(200).json({ success: true, message: "Stops ETA updated successfully." });
+
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ error: err.message || "Internal Server Error" });
+  }
+};
