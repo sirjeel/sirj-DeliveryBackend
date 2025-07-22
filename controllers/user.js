@@ -2,6 +2,7 @@ const User = require('../models/user');
 const Timesheet = require('../models/timsheet');
 const { Order } = require('../models/oilorder');
 const { errorHandler } = require('../helpers/dbErrorHandler');
+const mongoose = require('mongoose');
 
 exports.userById = async (req, res, next, id) => {
     try {
@@ -65,6 +66,39 @@ exports.update = async (req, res) => {
         return res.status(400).json({ error: 'User update failed' });
     }
 };
+
+
+exports.addCollectionpoint = async (req, res) => {
+  try {
+    const { id, collectionpoint } = req.body;
+
+    if (!id || !collectionpoint) {
+      return res.status(400).json({ error: "id and collectionpoint are required." });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id) || !mongoose.Types.ObjectId.isValid(collectionpoint)) {
+      return res.status(400).json({ error: "Invalid id or collectionpoint." });
+    }
+
+    const result = await User.findByIdAndUpdate(
+      id,
+      { $addToSet: { collectionpoint: collectionpoint } }, // avoids duplicates
+      { new: false }
+    );
+
+    if (!result) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    return res.status(200).json({ success: true, message: "Collectionpoint added successfully." });
+
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ error: errorHandler(err) || "Internal Server Error" });
+  }
+};
+
+
 
 exports.addOrderToUserHistory = async (req, res, next) => {
     try {

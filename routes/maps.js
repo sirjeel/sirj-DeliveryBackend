@@ -3,9 +3,9 @@ const router = express.Router();
 const { Client } = require("@googlemaps/google-maps-services-js");
 
 // Endpoint to get autocomplete predictions
-router.post("maps/autocomplete", async (req, res) => {
+router.post("/maps/autocomplete", async (req, res) => {
     try {
-        const { input, location, radius, components } = req.query;
+        const { input, location, radius, components } = req.body;
         const client = new Client({});
         const response = await client.placeAutocomplete({
             params: {
@@ -15,7 +15,7 @@ router.post("maps/autocomplete", async (req, res) => {
                 radius,
                 components,
             },
-            timeout: 1000, // Optional: Set a timeout for the request
+            timeout: 1000,
         });
 
         res.json({ predictions: response.data.predictions });
@@ -24,6 +24,7 @@ router.post("maps/autocomplete", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
 
 // Endpoint to get place details
 router.post("/placedetails", async (req, res) => {
