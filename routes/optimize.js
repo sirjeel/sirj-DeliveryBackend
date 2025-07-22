@@ -38,6 +38,8 @@ router.post("/get-optimized-routes", async (req, res) => {
   }
 });
 
+
+
 router.post("/get-ocr", async (req, res) => {
   try {
     // Initialize Formidable
