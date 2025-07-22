@@ -7,6 +7,7 @@ router.post("/maps/autocomplete", async (req, res) => {
     try {
         const { input, location, radius, components } = req.body;
         const client = new Client({});
+
         const response = await client.placeAutocomplete({
             params: {
                 input,
@@ -18,7 +19,12 @@ router.post("/maps/autocomplete", async (req, res) => {
             timeout: 1000,
         });
 
-        res.json({ predictions: response.data.predictions });
+        const minimalPredictions = response.data.predictions.map(p => ({
+            place_id: p.place_id,
+            description: p.description
+        }));
+
+        res.json({ predictions: minimalPredictions });
     } catch (error) {
         console.error("Error fetching autocomplete predictions:", error);
         res.status(500).json({ error: error.message });
@@ -26,8 +32,9 @@ router.post("/maps/autocomplete", async (req, res) => {
 });
 
 
+
 // Endpoint to get place details
-router.post("/placedetails", async (req, res) => {
+router.post("/maps/placedetails", async (req, res) => {
     try {
         const { place_id } = req.body;
         const client = new Client({});
