@@ -338,6 +338,58 @@ exports.bulkupdateEta = async (req, res) => {
 };
 
 
+exports.driverLocationLiveTracking = async (req, res) => {
+  try {
+    const { startDate, endDate, collectionpoints } = req.body;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: "startDate and endDate are required." });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Validate dates
+    if (isNaN(start) || isNaN(end)) {
+      return res.status(400).json({ message: "Invalid date format. Expected 'YYYY-MM-DD'." });
+    }
+
+    // Adjust end date to include the full day
+    end.setHours(23, 59, 59, 999);
+    
+    const collectionpointFilter = collectionpoints.map(cp => new mongoose.Types.ObjectId(cp._id));
+
+
+    const routes = await Route.find({
+      createdAt: {
+        $gte: start,
+        $lte: end
+      }
+    })
+    .populate('stops.driver')
+    .populate('stops.collectionpoint') 
+    .exec(); // use exec on the query chain directly  
+
+    // Post-filter: retain routes that include **some** collectionpointFilter IDs in their stops
+   const filteredRoutes = routes.filter(route => {
+   const routeCollectionpointIds = route.stops.map(stop =>
+    stop.collectionpoint?._id?.toString()
+    );
+
+     return collectionpointFilter.some(id =>
+      routeCollectionpointIds.includes(id.toString())
+      );
+    });
+
+
+    return res.status(200).json({ filteredRoutes });
+  } catch (error) {
+    console.error("Error fetching routes by date range:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+
 /* below is fetchAllRoutesByDateRange version in ES6 without using mongo queries directly (less efficient)
 
 exports.fetchAllRoutesByDateRange = async (req, res) => {
