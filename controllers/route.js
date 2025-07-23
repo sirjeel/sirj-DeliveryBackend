@@ -191,7 +191,6 @@ exports.deleteOneroute = async (req, res) => {
   }
 };
 
-
 exports.fetchAllRoutesByDateRange = async (req, res) => {
   try {
     const { startDate, endDate, collectionpoints } = req.body;
@@ -203,105 +202,43 @@ exports.fetchAllRoutesByDateRange = async (req, res) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    // Validate dates
     if (isNaN(start) || isNaN(end)) {
       return res.status(400).json({ message: "Invalid date format. Expected 'YYYY-MM-DD'." });
     }
 
-    // Adjust end date to include the full day
     end.setHours(23, 59, 59, 999);
     
-    const collectionpointFilter = collectionpoints.map(cp => new mongoose.Types.ObjectId(cp._id));
+    const collectionpointIds = collectionpoints.map(cp => new mongoose.Types.ObjectId(cp._id));
 
-
+    // Find routes with matching collection points using MongoDB query
     const routes = await Route.find({
-      createdAt: {
-        $gte: start,
-        $lte: end
-      }
+      createdAt: { $gte: start, $lte: end },
+      'stops.collectionpoint': { $in: collectionpointIds }
     })
     .populate('stops.driver')
-    .populate('stops.collectionpoint') 
-    .exec(); // use exec on the query chain directly  
+    .populate('stops.collectionpoint')
+    .exec();
 
-    // Post-filter: retain routes that include **some** collectionpointFilter IDs in their stops
-   const filteredRoutes = routes.filter(route => {
-   const routeCollectionpointIds = route.stops.map(stop =>
-    stop.collectionpoint?._id?.toString()
+    // Filter the specific stops in JavaScript (now with populated data)
+    const filteredStops = routes.flatMap(route => 
+      route.stops.filter(stop => 
+        stop.collectionpoint?._id && 
+        collectionpointIds.some(id => id.equals(stop.collectionpoint._id))
+      )
     );
 
-     return collectionpointFilter.some(id =>
-      routeCollectionpointIds.includes(id.toString())
-      );
-    });
-
-
-    return res.status(200).json({ filteredRoutes });
-  } catch (error) {
-    console.error("Error fetching routes by date range:", error);
-    return res.status(500).json({ message: "Internal server error." });
-  }
-};
-
-
-/*
-exports.fetchAllRoutesByDateRange = async (req, res) => {
-  try {
-    const { startDate, endDate, collectionpoints = [], userID } = req.body;
-
-    if (!startDate || !endDate) {
-      return res.status(400).json({ message: "startDate and endDate are required." });
-    }
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    // below cuttoff date when stop schema change as a result reports not displaying data before that date
-    const cutoffDate = new Date("2025-07-07");
-
-    if (isNaN(start) || isNaN(end)) {
-      return res.status(400).json({ message: "Invalid date format. Expected 'YYYY-MM-DD'." });
-    }
-
-    // Include entire end date
-    end.setHours(23, 59, 59, 999);
-
-    // Normalize to ObjectId if needed
-    const collectionpointFilter = collectionpoints.map(cp => new mongoose.Types.ObjectId(cp._id) );
-
-    const routes = await Route.find({
-      createdAt: { $gte: start, $lte: end }
-    })
-      .populate('stops.driver')
-      .populate('stops.collectionpoint')
-      .exec(); // use exec on the query chain directly
-
-    let filteredRoutes;
-
-    const isSpecialUser = userID === "684c7ead90b1d07630efc988" || userID === "684c7f3990b1d07630efc98a";
-    const isDateold = start < cutoffDate || end < cutoffDate;
-
-    if (isSpecialUser && isDateold) {
-      filteredRoutes = routes;
-    } else {
-      filteredRoutes = routes.filter(route => {
-        const routeCollectionpointIds = route.stops
-          .map(stop => stop.collectionpoint?._id?.toString())
-          .filter(Boolean); // filter out undefined/null
-
-        return collectionpointFilter.some(id =>
-          routeCollectionpointIds.includes(id.toString())
-        );
-      });
-    }
-
-    return res.status(200).json({ filteredRoutes });
+    console.log('Filtered stops with populated data:', filteredStops.length);
+    return res.status(200).json({ filteredData: filteredStops });
 
   } catch (error) {
     console.error("Error fetching routes by date range:", error);
     return res.status(500).json({ message: "Internal server error." });
   }
 };
-*/
+
+
+
+
 
 exports.fetchRouteById = async (req, res) => {
   try {
@@ -399,3 +336,67 @@ exports.bulkupdateEta = async (req, res) => {
     return res.status(500).json({ error: err.message || "Internal Server Error" });
   }
 };
+
+
+/* below is fetchAllRoutesByDateRange version in ES6 without using mongo queries directly (less efficient)
+
+exports.fetchAllRoutesByDateRange = async (req, res) => {
+  try {
+    const { startDate, endDate, collectionpoints } = req.body;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: "startDate and endDate are required." });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Validate dates
+    if (isNaN(start) || isNaN(end)) {
+      return res.status(400).json({ message: "Invalid date format. Expected 'YYYY-MM-DD'." });
+    }
+
+    // Adjust end date to include the full day
+    end.setHours(23, 59, 59, 999);
+    
+    const collectionpointFilter = collectionpoints.map(cp => new mongoose.Types.ObjectId(cp._id));
+
+
+    const routes = await Route.find({
+      createdAt: {
+        $gte: start,
+        $lte: end
+      }
+    })
+    .populate('stops.driver')
+    .populate('stops.collectionpoint') 
+    .exec(); // use exec on the query chain directly
+
+
+
+  const filterStops = (routeArray, idsToFindArray) => {
+  // Convert ObjectIds to strings for comparison
+  const idsToFindSet = new Set(idsToFindArray.map(id => id.toString()));
+  
+  return routeArray.flatMap(route => 
+    [route.stops]
+      .flatMap(stopArray => stopArray)
+      .filter(stop => {
+        const collectionPointId = stop.collectionpoint?._id?.toString();
+        return collectionPointId && idsToFindSet.has(collectionPointId);
+      })
+  );
+};
+
+
+    const filteredData = filterStops(routes, collectionpointFilter);
+    console.log(filteredData)
+
+    return res.status(200).json({ filteredData });
+  } catch (error) {
+    console.error("Error fetching routes by date range:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+*/

@@ -15,6 +15,7 @@ router.post("/maps/autocomplete", async (req, res) => {
                 location,
                 radius,
                 components,
+                strictbounds: true  // This enforces the radius as a hard boundary
             },
             timeout: 1000,
         });
