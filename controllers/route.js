@@ -69,7 +69,7 @@ exports.updateStop = async (req, res) => {
 
 exports.updateStatus = async (req, res) => {
   try {
-    const { routeId, status, stopId, time, driverId } = req.body;
+    const { routeId, status, stopId, time } = req.body;
 
     if (!routeId || !stopId) {
       return res.status(400).json({ error: "routeId and stopId are required." });
@@ -78,7 +78,7 @@ exports.updateStatus = async (req, res) => {
     // Update the stop with matching stopId inside the stops array of the route
     const result = await Route.updateOne(
       { _id: routeId, "stops.stopId": stopId },
-      { $set: { "stops.$.status": status, "stops.$.time": time, "stops.$.driver": driverId } }
+      { $set: { "stops.$.status": status, "stops.$.time": time } }
     );
 
     if (result.matchedCount === 0) {
