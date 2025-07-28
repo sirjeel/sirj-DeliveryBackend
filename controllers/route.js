@@ -26,13 +26,15 @@ exports.updateStop = async (req, res) => {
     if (!routeId || !stop) {
       return res.status(400).json({ error: "routeId and stop are required." });
     }
-/*
+    /*
     if (!mongoose.Types.ObjectId.isValid(routeId)) {
       return res.status(400).json({ error: "Invalid route ID." });
     }
-*/
+    */
    let update;
 
+ // react native app sends stop in array after camera scan but autocomplete bar send stops in object literal format
+ // therefore its important to handle both incoming data types differently as below
     if (Array.isArray(stop)) {
       // Handle array of stop objects
       update = { $push: { stops: { $each: stop } } };
@@ -212,12 +214,12 @@ exports.fetchAllRoutesByDateRange = async (req, res) => {
 
     // Find routes with matching collection points using MongoDB query
     const routes = await Route.find({
-      createdAt: { $gte: start, $lte: end },
-      'stops.collectionpoint': { $in: collectionpointIds }
+      createdAt: { $gte: start, $lte: end }
     })
     .populate('stops.driver')
     .populate('stops.collectionpoint')
     .exec();
+
 
     // Filter the specific stops in JavaScript (now with populated data)
     const filteredStops = routes.flatMap(route => 
