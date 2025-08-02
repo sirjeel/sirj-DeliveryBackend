@@ -81,6 +81,7 @@ const stopSchema = new mongoose.Schema({
             ref: "User",
             required: true
         },
+      inprogress: { type: Boolean, default: true }
     },
     { timestamps: true }
   );

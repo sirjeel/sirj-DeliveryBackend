@@ -391,6 +391,71 @@ exports.driverLocationLiveTracking = async (req, res) => {
   }
 };
 
+exports.finishRoute = async (req, res) => {
+  try {
+    const { routeId, inprogress } = req.body;
+
+    if (!routeId || !inprogress) {
+      return res.status(400).json({ error: "routeId and inprogress status is required." });
+    }
+
+    // Update the stop with matching stopId inside the stops array of the route
+    const result = await Route.updateOne(
+      { _id: routeId },
+      { $set: { "inprogress": inprogress  } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Route not found." });
+    }
+
+    // ✅ Return only a success confirmation
+    return res.status(200).json({ success: true, message: "inprogress status updated successfully." });
+
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ error: errorHandler(err) || "Internal Server Error" });
+  }
+};
+
+// below is liveTracking endpoint for owner dashboard only
+exports.fetchinProgressRoutes = async (req, res) => {
+  try {
+     const { startDate, endDate } = req.body;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: "startDate and endDate are required." });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Validate dates
+    if (isNaN(start) || isNaN(end)) {
+      return res.status(400).json({ message: "Invalid date format. Expected 'YYYY-MM-DD'." });
+    }
+
+    // Adjust end date to include the full day
+    end.setHours(23, 59, 59, 999);
+
+   // populate user credentials without returning password
+   // filter route first by date range and then by inprogress status === true
+    const inProgressRoutes = await Route.find({
+      createdAt: { $gte: start, $lte: end },
+      inprogress: true
+    })
+    .populate('user', '-password') // Exclude password field
+    .populate('stops.driver')
+    .populate('stops.collectionpoint')
+    .exec();
+
+    return res.status(200).json(inProgressRoutes);
+
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
 /* below is fetchAllRoutesByDateRange version in ES6 without using mongo queries directly (less efficient)
 
